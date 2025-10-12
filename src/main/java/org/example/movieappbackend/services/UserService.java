@@ -5,6 +5,8 @@ import org.example.movieappbackend.payloads.UserDto;
 import java.util.List;
 
 public interface UserService {
+    UserDto registerUser(UserDto userDto);
+
     UserDto createUser(UserDto userDto);
 
     UserDto updateUser(UserDto userDto, Long userId);

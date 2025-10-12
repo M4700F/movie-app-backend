@@ -18,9 +18,9 @@ public class SwaggerConfig {
     public OpenAPI customOpenAPI() {
         return new OpenAPI()
                 .info(new Info()
-                        .title("Blog Application API")
+                        .title("Movie Recommendation Backend")
                         .version("1.0.0")
-                        .description("This is a comprehensive REST API for a Blog Application built with Spring Boot. " +
+                        .description("This is a comprehensive REST API for a Movie Recommendation built with Spring Boot. " +
                                 "It provides endpoints for user management, blog post operations, category management, " +
                                 "and authentication features.\n\n" +
                                 "**Terms of Use:** This API is for educational purposes only. Use responsibly.")
