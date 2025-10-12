@@ -1,12 +1,17 @@
 package org.example.movieappbackend.services.impl;
 
+import com.fasterxml.jackson.databind.annotation.JsonAppend;
+import org.example.movieappbackend.configs.AppConstants;
+import org.example.movieappbackend.entities.Role;
 import org.example.movieappbackend.entities.User;
 import org.example.movieappbackend.exceptions.ResourceNotFoundException;
 import org.example.movieappbackend.payloads.UserDto;
+import org.example.movieappbackend.repositories.RoleRepo;
 import org.example.movieappbackend.repositories.UserRepo;
 import org.example.movieappbackend.services.UserService;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -22,6 +27,22 @@ public class UserServiceImpl implements UserService {
     @Autowired
     private ModelMapper modelMapper;
 
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+
+    @Autowired
+    private RoleRepo roleRepo;
+
+
+    @Override
+    public UserDto registerUser(UserDto userDto) {
+        User user = this.modelMapper.map(userDto, User.class);
+        user.setPassword(this.passwordEncoder.encode(user.getPassword()));
+        Role role = this.roleRepo.findById(AppConstants.NORMAL_USER).get();
+        user.getRoles().add(role);
+        User savedUser = this.userRepo.save(user);
+        return this.modelMapper.map(savedUser, UserDto.class);
+    }
 
     @Override
     public UserDto createUser(UserDto userDto) {
