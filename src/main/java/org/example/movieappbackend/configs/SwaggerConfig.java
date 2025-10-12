@@ -1,4 +1,4 @@
-package com.example.blogappbackend.configs;
+package org.example.movieappbackend.configs;
 
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.info.Contact;
