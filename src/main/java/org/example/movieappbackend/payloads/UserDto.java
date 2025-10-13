@@ -13,7 +13,7 @@ import java.util.Set;
 
 @NoArgsConstructor
 @Data
-public class    UserDto {
+public class UserDto {
     private Long id;
 
     @NotBlank
