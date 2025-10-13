@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:cached_network_image/cached_network_image.dart';
-import '../models/movie.dart';
-import '../theme/app_theme.dart';
+import 'package:movieappfrontend/models/movie.dart'; // For MovieCard
+import 'package:movieappfrontend/widgets/movie_card.dart'; // For My Recent Ratings
+import 'package:movieappfrontend/theme/app_theme.dart'; // For theme control
+import 'package:movieappfrontend/main.dart'; // Import themeNotifier
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -11,13 +12,11 @@ class ProfilePage extends StatefulWidget {
 }
 
 class _ProfilePageState extends State<ProfilePage> {
-  bool _isDarkMode = true;
-
-  final List<Map<String, dynamic>> _userStats = [
-    {'label': 'Movies Watched', 'value': '127'},
-    {'label': 'Hours Streamed', 'value': '342'},
-    {'label': 'Favorites', 'value': '45'},
-  ];
+  // Placeholder data for profile sections
+  final int _moviesWatched = 127;
+  final int _hoursStreamed = 342;
+  final int _favorites = 45;
+  final int _myRatingsCount = 32;
 
   final List<Movie> _recentRatings = [
     Movie(
@@ -42,339 +41,187 @@ class _ProfilePageState extends State<ProfilePage> {
 
   @override
   Widget build(BuildContext context) {
-    return ListView(
-      padding: const EdgeInsets.all(16),
-      children: [
-        // Profile Header
-        Row(
-          children: [
-            Stack(
-              children: [
-                Container(
-                  width: 80,
-                  height: 80,
-                  decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [AppTheme.primary, AppTheme.secondary],
-                    ),
-                    borderRadius: BorderRadius.circular(40),
-                  ),
-                  child: const Center(
-                    child: Text(
-                      'JD',
-                      style: TextStyle(
-                        fontSize: 28,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ),
-                ),
-                Positioned(
-                  bottom: 0,
-                  right: 0,
-                  child: Container(
-                    padding: const EdgeInsets.all(6),
-                    decoration: BoxDecoration(
-                      color: AppTheme.primary,
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: AppTheme.background,
-                        width: 2,
-                      ),
-                    ),
-                    child: const Icon(
-                      Icons.edit,
-                      size: 12,
-                      color: Colors.white,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(width: 16),
-            const Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'John Doe',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  SizedBox(height: 4),
-                  Text(
-                    'john.doe@email.com',
-                    style: TextStyle(
-                      color: AppTheme.mutedForeground,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 24),
-
-        // Stats
-        Row(
-          children: _userStats.map((stat) {
-            return Expanded(
-              child: Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    children: [
-                      ShaderMask(
-                        shaderCallback: (bounds) => const LinearGradient(
-                          colors: [AppTheme.primary, AppTheme.secondary],
-                        ).createShader(bounds),
-                        child: Text(
-                          stat['value'],
-                          style: const TextStyle(
-                            fontSize: 24,
-                            fontWeight: FontWeight.w500,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        stat['label'],
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: AppTheme.mutedForeground,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            );
-          }).toList(),
-        ),
-        const SizedBox(height: 24),
-
-        // Recent Ratings
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            const Text(
-              'My Recent Ratings',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-            TextButton(
-              onPressed: () {},
-              child: const Text('See All'),
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        SizedBox(
-          height: 180,
-          child: ListView.separated(
-            scrollDirection: Axis.horizontal,
-            itemCount: _recentRatings.length,
-            separatorBuilder: (context, index) => const SizedBox(width: 12),
-            itemBuilder: (context, index) {
-              final movie = _recentRatings[index];
-              return SizedBox(
-                width: 100,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Stack(
-                      children: [
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(12),
-                          child: CachedNetworkImage(
-                            imageUrl: movie.image,
-                            width: 100,
-                            height: 150,
-                            fit: BoxFit.cover,
-                            placeholder: (context, url) => Container(
-                              color: AppTheme.muted,
-                            ),
-                          ),
-                        ),
-                        Positioned(
-                          bottom: 4,
-                          right: 4,
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 4,
-                            ),
-                            decoration: BoxDecoration(
-                              color: Colors.black.withOpacity(0.7),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                const Icon(
-                                  Icons.star,
-                                  color: AppTheme.secondary,
-                                  size: 12,
-                                ),
-                                const SizedBox(width: 2),
-                                Text(
-                                  movie.rating.toStringAsFixed(0),
-                                  style: const TextStyle(fontSize: 12),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      movie.title,
-                      style: const TextStyle(fontSize: 12),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
-                ),
-              );
-            },
-          ),
-        ),
-        const SizedBox(height: 24),
-
-        // Menu Items
-        _buildMenuItem(
-          icon: Icons.settings_outlined,
-          label: 'Account Settings',
-          onTap: () {},
-        ),
-        const SizedBox(height: 12),
-        _buildMenuItem(
-          icon: Icons.star_outline,
-          label: 'My Ratings',
-          trailing: '32',
-          onTap: () {},
-        ),
-        const SizedBox(height: 12),
-        _buildMenuItem(
-          icon: Icons.history,
-          label: 'Viewing History',
-          onTap: () {},
-        ),
-        const SizedBox(height: 24),
-
-        // Dark Mode Toggle
-        Card(
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: AppTheme.primary.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Icon(
-                        _isDarkMode ? Icons.dark_mode : Icons.light_mode,
-                        color: AppTheme.primary,
-                        size: 20,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    const Text('Dark Mode'),
-                  ],
-                ),
-                Switch(
-                  value: _isDarkMode,
-                  onChanged: (value) {
-                    setState(() {
-                      _isDarkMode = value;
-                    });
-                  },
-                  activeColor: AppTheme.primary,
-                ),
-              ],
-            ),
-          ),
-        ),
-        const SizedBox(height: 16),
-
-        // Logout Button
-        ElevatedButton(
-          onPressed: () {},
-          style: ElevatedButton.styleFrom(
-            backgroundColor: AppTheme.destructive.withOpacity(0.1),
-            foregroundColor: AppTheme.destructive,
-            padding: const EdgeInsets.symmetric(vertical: 16),
-          ),
-          child: const Row(
-            mainAxisAlignment: MainAxisAlignment.center,
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Profile'),
+      ),
+      body: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          // Top Overview Section
+          Row(
             children: [
-              Icon(Icons.logout),
-              SizedBox(width: 8),
-              Text('Logout'),
+              _buildOverviewCard('Movies Watched', _moviesWatched.toString(), Colors.deepPurple),
+              const SizedBox(width: 16),
+              _buildOverviewCard('Hours Streamed', _hoursStreamed.toString(), Colors.orange),
+              const SizedBox(width: 16),
+              _buildOverviewCard('Favorites', _favorites.toString(), Colors.pink),
             ],
           ),
-        ),
-      ],
+          const SizedBox(height: 32),
+
+          // My Recent Ratings Section
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'My Recent Ratings',
+                style: Theme.of(context).textTheme.headlineMedium,
+              ),
+              TextButton(
+                onPressed: () {
+                  // Navigate to My Ratings List Page
+                },
+                child: const Text(
+                  'See All',
+                  style: TextStyle(color: AppTheme.primary),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          SizedBox(
+            height: 290, // Height for horizontal movie card list
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              itemCount: _recentRatings.length,
+              separatorBuilder: (context, index) => const SizedBox(width: 16),
+              itemBuilder: (context, index) {
+                final movie = _recentRatings[index];
+                return MovieCard(
+                  movie: movie,
+                  onTap: () {
+                    // Navigate to movie details
+                  },
+                );
+              },
+            ),
+          ),
+          const SizedBox(height: 32),
+
+          // Action List Items
+          _buildActionListItem(
+            icon: Icons.settings,
+            title: 'Account Settings',
+            onTap: () {
+              // Navigate to Account Settings
+            },
+          ),
+          const SizedBox(height: 16),
+          _buildActionListItem(
+            icon: Icons.star_outline,
+            title: 'My Ratings',
+            trailingText: _myRatingsCount.toString(),
+            onTap: () {
+              // Navigate to My Ratings
+            },
+          ),
+          const SizedBox(height: 16),
+          _buildActionListItem(
+            icon: Icons.history,
+            title: 'Viewing History',
+            onTap: () {
+              // Navigate to Viewing History
+            },
+          ),
+          const SizedBox(height: 16),
+          _buildActionListItem(
+            icon: Icons.reviews_outlined,
+            title: 'My Reviews',
+            onTap: () {
+              // Navigate to My Reviews
+            },
+          ),
+          const SizedBox(height: 16),
+          _buildActionListItem(
+            icon: Icons.reviews_outlined,
+            title: 'My Reviews',
+            onTap: () {
+              // Navigate to My Reviews
+            },
+          ),
+          const SizedBox(height: 16),
+          _buildActionListItem(
+            icon: themeNotifier.value == ThemeMode.dark ? Icons.dark_mode : Icons.light_mode,
+            title: 'Dark/Light Theme',
+            trailingWidget: Switch(
+              value: themeNotifier.value == ThemeMode.dark,
+              onChanged: (value) {
+                themeNotifier.value = value ? ThemeMode.dark : ThemeMode.light;
+              },
+              activeColor: AppTheme.primary,
+            ),
+            onTap: () {
+              themeNotifier.value = themeNotifier.value == ThemeMode.dark ? ThemeMode.light : ThemeMode.dark;
+            },
+          ),
+        ],
+      ),
     );
   }
 
-  Widget _buildMenuItem({
+  Widget _buildOverviewCard(String title, String value, Color color) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: AppTheme.muted.withOpacity(0.2),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              value,
+              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                color: color,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              title,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppTheme.mutedForeground),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildActionListItem({
     required IconData icon,
-    required String label,
-    String? trailing,
-    required VoidCallback onTap,
+    required String title,
+    String? trailingText,
+    Widget? trailingWidget,
+    VoidCallback? onTap,
   }) {
-    return Card(
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: AppTheme.primary.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Icon(
-                  icon,
-                  color: AppTheme.primary,
-                  size: 20,
-                ),
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          color: AppTheme.muted.withOpacity(0.2),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          children: [
+            Icon(icon, color: AppTheme.primary),
+            const SizedBox(width: 16),
+            Text(
+              title,
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+            const Spacer(),
+            if (trailingText != null)
+              Text(
+                trailingText,
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: AppTheme.mutedForeground),
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(label),
-              ),
-              if (trailing != null) ...[
-                Text(
-                  trailing,
-                  style: const TextStyle(
-                    color: AppTheme.mutedForeground,
-                  ),
-                ),
-                const SizedBox(width: 8),
-              ],
-              const Icon(
-                Icons.chevron_right,
-                color: AppTheme.mutedForeground,
-              ),
-            ],
-          ),
+            if (trailingWidget != null) trailingWidget,
+            const SizedBox(width: 8),
+            const Icon(Icons.arrow_forward_ios, size: 16, color: AppTheme.mutedForeground),
+          ],
         ),
       ),
     );
