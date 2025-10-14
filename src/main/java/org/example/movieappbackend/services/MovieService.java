@@ -18,4 +18,6 @@ public interface MovieService {
     void deleteMovieById(Long movieId);
 
     List<MovieDto> searchMovieByTitle(String keyword);
+
+    void updateAllPosters();
 }
