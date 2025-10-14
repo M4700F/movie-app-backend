@@ -14,6 +14,9 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+import java.util.stream.Stream;
+
 @Service
 public class MovieServiceImpl implements MovieService {
 
@@ -77,5 +80,11 @@ public class MovieServiceImpl implements MovieService {
     public void deleteMovieById(Long movieId) {
         Movie movie = this.movieRepo.findById(movieId).orElseThrow(() -> new ResourceNotFoundException("Movie", "Id", movieId));
         this.movieRepo.delete(movie);
+    }
+
+    @Override
+    public List<MovieDto> searchMovieByTitle(String keyword) {
+        List<Movie> movies = this.movieRepo.findByTitleContainingIgnoreCase(keyword);
+        return movies.stream().map(movie -> this.modelMapper.map(movie, MovieDto.class)).toList();
     }
 }

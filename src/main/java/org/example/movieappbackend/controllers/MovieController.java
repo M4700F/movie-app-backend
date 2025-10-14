@@ -13,6 +13,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/movies")
 public class MovieController {
@@ -59,5 +61,12 @@ public class MovieController {
     public ApiResponse deleteMovie(@Valid @PathVariable("movieId") Long movieId){
         this.movieService.deleteMovieById(movieId);
         return new ApiResponse("Movie has been successfully deleted with ID: " + movieId, true);
+    }
+
+    // search by title
+    @GetMapping("/search/{keywords}")
+    public ResponseEntity<List<MovieDto>> searchPost(@PathVariable("keywords") String keywords){
+        List<MovieDto> movieDtos = this.movieService.searchMovieByTitle(keywords);
+        return new ResponseEntity<List<MovieDto>>(movieDtos, HttpStatus.OK);
     }
 }
