@@ -18,4 +18,5 @@ public class Movie {
     private String title;
     private Integer releaseYear;
     private String genres;
+    private String posterUrl;
 }
