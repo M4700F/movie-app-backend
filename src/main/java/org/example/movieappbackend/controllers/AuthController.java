@@ -71,5 +71,18 @@ public class AuthController {
         }
     }
 
+    @GetMapping("/me")
+    public ResponseEntity<UserDto> getCurrentUser(@RequestHeader(value = "Authorization", required = false) String authHeader) {
+        String token = jwtTokenHelper.extractTokenFromHeader(authHeader);
+        if (token == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        String username = jwtTokenHelper.getUsernameFromToken(token);
+        UserDto user = userService.getUserByEmail(username); // your service already has this
+        return ResponseEntity.ok(user);
+    }
+
+
 
 }

@@ -13,6 +13,8 @@ public interface UserService {
 
     UserDto getUserById(Long userId);
 
+    UserDto getUserByEmail(String email);
+
     List<UserDto> getAllUsers();
 
     void deleteUserById(Long userId);

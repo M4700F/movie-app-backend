@@ -10,6 +10,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.security.Principal;
 import java.util.List;
 
 @RestController
@@ -35,6 +36,15 @@ public class UserController {
     public ResponseEntity<UserDto> getUser(@Valid @PathVariable("userId") Long uid) {
         UserDto userById = this.userService.getUserById(uid);
         return new ResponseEntity<>(userById, HttpStatus.OK);
+    }
+
+    // Add this to your UserController or AuthController
+
+    @GetMapping("/users/profile")
+    public ResponseEntity<UserDto> getCurrentUser(Principal principal) {
+        String email = principal.getName(); // Gets the username (email) from JWT
+        UserDto user = this.userService.getUserByEmail(email);
+        return ResponseEntity.ok(user);
     }
 
     @GetMapping("/")
