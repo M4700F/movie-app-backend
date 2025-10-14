@@ -69,4 +69,10 @@ public class MovieController {
         List<MovieDto> movieDtos = this.movieService.searchMovieByTitle(keywords);
         return new ResponseEntity<List<MovieDto>>(movieDtos, HttpStatus.OK);
     }
+
+    @PostMapping("/update-posters")
+    public String updatePosters() {
+        movieService.updateAllPosters();
+        return "Poster update process started";
+    }
 }
