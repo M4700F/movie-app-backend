@@ -6,6 +6,7 @@ import org.example.movieappbackend.payloads.MovieDto;
 import org.example.movieappbackend.payloads.MoviePageResponse;
 import org.example.movieappbackend.repositories.MovieRepo;
 import org.example.movieappbackend.services.MovieService;
+import org.example.movieappbackend.services.TMDBService;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -25,6 +26,9 @@ public class MovieServiceImpl implements MovieService {
 
     @Autowired
     private ModelMapper modelMapper;
+
+    @Autowired
+    private TMDBService tmdbService;
 
     @Override
     public MovieDto createMovie(MovieDto movieDto) {
@@ -86,5 +90,24 @@ public class MovieServiceImpl implements MovieService {
     public List<MovieDto> searchMovieByTitle(String keyword) {
         List<Movie> movies = this.movieRepo.findByTitleContainingIgnoreCase(keyword);
         return movies.stream().map(movie -> this.modelMapper.map(movie, MovieDto.class)).toList();
+    }
+
+    @Override
+    public void updateAllPosters() {
+        List<Movie> movies = this.movieRepo.findAll();
+
+        for(Movie movie : movies){
+            if(movie.getPosterUrl() == null || movie.getPosterUrl().isEmpty()) {
+                String posterURL = tmdbService.fetchPosterURL(movie.getTitle());
+                if(posterURL != null) {
+                    movie.setPosterUrl(posterURL);
+                    movieRepo.save(movie);
+                    System.out.println("Poster updated for " + movie.getTitle());
+                }
+                else {
+                    System.out.println("Poster not found for " + movie.getTitle());
+                }
+            }
+        }
     }
 }
