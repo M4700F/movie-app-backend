@@ -18,4 +18,5 @@ public class MovieDto {
     private Integer releaseYear;
     @NotBlank
     private String genres;
+    private String posterUrl; // Added posterUrl field
 }
