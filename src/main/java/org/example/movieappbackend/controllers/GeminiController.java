@@ -1,10 +1,15 @@
 package org.example.movieappbackend.controllers;
 
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.*;
+import org.example.movieappbackend.payloads.ChatRequest;
+import org.example.movieappbackend.services.GeminiService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.client.RestTemplate;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -13,80 +18,49 @@ import java.util.Map;
 @CrossOrigin(origins = "*")
 public class GeminiController {
 
-    @Value("${gemini.api.key}")
-    private String apiKey;
+    private static final Logger logger = LoggerFactory.getLogger(GeminiController.class);
 
-    // ✅ Using Gemini Pro model (most compatible)
-    private final String GEMINI_API_URL =
-            "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=";
+    @Autowired
+    private GeminiService geminiService;
 
     @PostMapping
-    public ResponseEntity<Map<String, Object>> chat(@RequestBody Map<String, String> request) {
-        String prompt = request.get("message");
-
-        if (prompt == null || prompt.trim().isEmpty()) {
-            return ResponseEntity.badRequest().body(Map.of("error", "Message is required"));
-        }
-
-        RestTemplate restTemplate = new RestTemplate();
-
+    public ResponseEntity<Map<String, Object>> chat(@RequestBody ChatRequest request) {
         try {
-            // ✅ Correct request body for Gemini 1.5
-            Map<String, Object> body = Map.of(
-                    "contents", List.of(
-                            Map.of(
-                                    "parts", List.of(
-                                            Map.of("text", prompt)
-                                    )
-                            )
-                    )
-            );
+            logger.info("Received chat request: {}", request.getMessage());
 
-            HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.APPLICATION_JSON);
-
-            HttpEntity<Map<String, Object>> entity = new HttpEntity<>(body, headers);
-
-            ResponseEntity<Map> response = restTemplate.exchange(
-                    GEMINI_API_URL + apiKey,
-                    HttpMethod.POST,
-                    entity,
-                    Map.class
-            );
-
-            Map<String, Object> bodyMap = response.getBody();
-            if (bodyMap == null) {
-                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                        .body(Map.of("error", "Invalid response from Gemini API"));
+            // Validate request
+            if (request.getMessage() == null || request.getMessage().trim().isEmpty()) {
+                logger.warn("Empty message received");
+                Map<String, Object> errorResponse = new HashMap<>();
+                errorResponse.put("error", "Message cannot be empty");
+                return ResponseEntity.badRequest().body(errorResponse);
             }
 
-            // ✅ Extract response from Gemini 1.5 structure
-            List<Map<String, Object>> candidates = (List<Map<String, Object>>) bodyMap.get("candidates");
-            if (candidates == null || candidates.isEmpty()) {
-                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                        .body(Map.of("error", "No response from Gemini API"));
-            }
+            // Get response from Gemini
+            String geminiResponse = geminiService.generateResponse(request.getMessage());
 
-            Map<String, Object> content = (Map<String, Object>) candidates.get(0).get("content");
-            if (content == null) {
-                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                        .body(Map.of("error", "No content in response"));
-            }
+            // Build response in format expected by Flutter app
+            Map<String, Object> response = new HashMap<>();
+            Map<String, String> responsePart = new HashMap<>();
+            responsePart.put("text", geminiResponse);
+            response.put("response", List.of(responsePart));
 
-            List<Map<String, Object>> parts = (List<Map<String, Object>>) content.get("parts");
-            if (parts == null || parts.isEmpty()) {
-                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                        .body(Map.of("error", "No parts in response"));
-            }
-
-            String reply = (String) parts.get(0).get("text");
-
-            return ResponseEntity.ok(Map.of("response", reply));
+            logger.info("Successfully generated response");
+            return ResponseEntity.ok(response);
 
         } catch (Exception e) {
-            e.printStackTrace();
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Map.of("error", "Failed to process request: " + e.getMessage()));
+            logger.error("Error processing chat request", e);
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("error", "Internal server error: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
         }
+    }
+
+    @GetMapping("/health")
+    public ResponseEntity<Map<String, String>> health() {
+        Map<String, String> response = new HashMap<>();
+        response.put("status", "ok");
+        response.put("service", "Gemini Chat API");
+        return ResponseEntity.ok(response);
     }
 }
