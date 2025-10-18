@@ -9,5 +9,6 @@ import java.util.List;
 @Repository
 public interface RecommendationRepo extends JpaRepository<Recommendation, Long> {
     List<Recommendation> findByUserIdOrderByPredictedScoreDesc(Long userId);
-    void deleteByUserId(Long userId);
+    void deleteAllByUserId(Long userId);
+    List<Recommendation> findByUserId(Long userId);
 }

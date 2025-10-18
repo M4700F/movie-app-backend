@@ -5,6 +5,8 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDateTime;
+
 @Entity
 @Table(name = "recommendations")
 @Data
@@ -24,4 +26,7 @@ public class Recommendation {
     private Movie movie;
 
     private double predictedScore; // optional: score from ML model
+
+    @Column(name = "cached_at")
+    private LocalDateTime cachedAt;
 }
