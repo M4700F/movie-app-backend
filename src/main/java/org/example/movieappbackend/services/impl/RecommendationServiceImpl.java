@@ -9,11 +9,13 @@ import org.example.movieappbackend.payloads.*;
 import org.example.movieappbackend.repositories.MovieRepo;
 import org.example.movieappbackend.repositories.RatingRepo;
 import org.example.movieappbackend.repositories.RecommendationRepo;
+import org.example.movieappbackend.services.RecommendationCacheService;
 import org.example.movieappbackend.services.RecommendationService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.*;
@@ -26,23 +28,27 @@ public class RecommendationServiceImpl implements RecommendationService {
     private RestTemplate restTemplate;
 
     @Autowired
-    private RecommendationRepo recommendationRepo;
-
-    @Autowired
     private RatingRepo ratingRepo;
 
     @Autowired
     private MovieRepo movieRepo;
 
+    @Autowired
+    private RecommendationCacheService recommendationCacheService;
+
     @Value("${fastapi.base-url}")
     private String fastApiBaseUrl;
 
-    @Value("${recommendation.cache.hours:24}")
-    private int cacheHours;
 
     @Override
     public RecommendationResponseDto getRecommendationsForUser(Long userId) {
         log.info("Getting recommendations for user: {}", userId);
+
+        // ✅ Step 1: Check if cached recommendations exist and are still valid
+        if (recommendationCacheService.isCacheValid(userId)) {
+            log.info("Returning cached recommendations for user {}", userId);
+            return recommendationCacheService.getCachedRecommendations(userId);
+        }
 
         // Get user's ratings
         List<Rating> userRatings = ratingRepo.findByUserId(userId);
@@ -81,7 +87,7 @@ public class RecommendationServiceImpl implements RecommendationService {
                         response.getBody().getRecommendations().size());
 
                 // Save recommendations to cache
-                saveRecommendationsToCache(userId, response.getBody());
+                this.recommendationCacheService.saveRecommendationsToCache(userId, response.getBody());
 
                 return response.getBody();
             }
@@ -89,7 +95,7 @@ public class RecommendationServiceImpl implements RecommendationService {
         } catch (Exception e) {
             log.error("Error calling FastAPI for user {}: {}", userId, e.getMessage());
             // Fallback to cached recommendations
-            return getCachedRecommendations(userId);
+            return this.recommendationCacheService.getCachedRecommendations(userId);
         }
 
         return getPopularMoviesAsRecommendations(userId);
@@ -128,67 +134,7 @@ public class RecommendationServiceImpl implements RecommendationService {
         return getPopularMoviesAsRecommendations(userId);
     }
 
-    @Override
-    public void saveRecommendationsToCache(Long userId, RecommendationResponseDto mlRecommendations) {
-        try {
-            // Clear old recommendations
-            recommendationRepo.deleteByUserId(userId);
 
-            List<Recommendation> recommendations = new ArrayList<>();
-
-            for (MovieRecommendationDto mlRec : mlRecommendations.getRecommendations()) {
-                Optional<Movie> movieOpt = movieRepo.findById(mlRec.getMovieId().longValue());
-
-                if (movieOpt.isEmpty()) {
-                    log.warn("Movie {} not found in database", mlRec.getMovieId());
-                    continue;
-                }
-
-                User user = new User();
-                user.setId(userId);
-
-                Recommendation rec = new Recommendation();
-                rec.setUser(user);
-                rec.setMovie(movieOpt.get());
-                rec.setPredictedScore(mlRec.getPredictedScore());
-
-                recommendations.add(rec);
-            }
-
-            recommendationRepo.saveAll(recommendations);
-            log.info("Saved {} recommendations to cache for user {}", recommendations.size(), userId);
-
-        } catch (Exception e) {
-            log.error("Error saving recommendations to cache: {}", e.getMessage());
-        }
-    }
-
-    @Override
-    public RecommendationResponseDto getCachedRecommendations(Long userId) {
-        log.info("Fetching cached recommendations for user: {}", userId);
-
-        List<Recommendation> cached = recommendationRepo
-                .findByUserIdOrderByPredictedScoreDesc(userId);
-
-        if (cached.isEmpty()) {
-            return getPopularMoviesAsRecommendations(userId);
-        }
-
-        List<MovieRecommendationDto> recDTOs = cached.stream()
-                .map(rec -> new MovieRecommendationDto(
-                        rec.getMovie().getId().intValue(),
-                        rec.getPredictedScore(),
-                        rec.getMovie().getTitle(),
-                        rec.getMovie().getGenres()
-                ))
-                .collect(Collectors.toList());
-
-        RecommendationResponseDto response = new RecommendationResponseDto();
-        response.setUserId(userId.intValue());
-        response.setRecommendations(recDTOs);
-
-        return response;
-    }
 
     @Override
     public RecommendationResponseDto getPopularMoviesAsRecommendations(Long userId) {
@@ -215,7 +161,6 @@ public class RecommendationServiceImpl implements RecommendationService {
     @Override
     public List<MovieRecommendationDto> getSimilarMovies(Long movieId, int topN) {
         log.info("Getting similar movies for movie: {}", movieId);
-        movieId = movieId + 4053;
         try {
             String url = fastApiBaseUrl + "/similar-movies/" + movieId + "?top_n=" + topN;
 

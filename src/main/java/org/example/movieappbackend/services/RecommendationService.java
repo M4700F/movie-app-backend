@@ -9,8 +9,6 @@ import java.util.List;
 public interface RecommendationService {
     RecommendationResponseDto getRecommendationsForUser(Long userId);
     RecommendationResponseDto getRecommendationsForNewUser(Long userId, NewUserPreferencesDto preferencesDto);
-    void saveRecommendationsToCache(Long userId, RecommendationResponseDto mlRecommendations);
-    RecommendationResponseDto getCachedRecommendations(Long userId);
     RecommendationResponseDto getPopularMoviesAsRecommendations(Long userId);
     List<MovieRecommendationDto>getSimilarMovies(Long movieId, int topN);
 }

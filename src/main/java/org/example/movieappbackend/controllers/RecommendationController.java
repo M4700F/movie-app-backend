@@ -34,7 +34,7 @@ public class RecommendationController {
     private UserRepo userRepo;
 
     /**
-     * Get personalized recommendations for authenticated user
+     * Get personalized recommendations for an authenticated user
      */
     @GetMapping("/me")
     public ResponseEntity<RecommendationResponseDto> getMyRecommendations() {
