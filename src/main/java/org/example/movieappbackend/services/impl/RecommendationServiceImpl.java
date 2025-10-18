@@ -215,7 +215,7 @@ public class RecommendationServiceImpl implements RecommendationService {
     @Override
     public List<MovieRecommendationDto> getSimilarMovies(Long movieId, int topN) {
         log.info("Getting similar movies for movie: {}", movieId);
-
+        movieId = movieId + 4053;
         try {
             String url = fastApiBaseUrl + "/similar-movies/" + movieId + "?top_n=" + topN;
 
