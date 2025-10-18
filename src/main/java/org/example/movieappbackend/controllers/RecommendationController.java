@@ -1,13 +1,20 @@
 package org.example.movieappbackend.controllers;
 
 import lombok.extern.slf4j.Slf4j;
+import org.example.movieappbackend.entities.User;
+import org.example.movieappbackend.exceptions.ResourceNotFoundException;
 import org.example.movieappbackend.payloads.MovieRecommendationDto;
 import org.example.movieappbackend.payloads.NewUserPreferencesDto;
 import org.example.movieappbackend.payloads.RecommendationResponseDto;
+import org.example.movieappbackend.payloads.UserDto;
+import org.example.movieappbackend.repositories.UserRepo;
 import org.example.movieappbackend.services.RecommendationService;
+import org.example.movieappbackend.services.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -20,17 +27,23 @@ public class RecommendationController {
     @Autowired
     private RecommendationService recommendationService;
 
+    @Autowired
+    private UserService userService;
+
+    @Autowired
+    private UserRepo userRepo;
+
     /**
      * Get personalized recommendations for authenticated user
      */
     @GetMapping("/me")
-    @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<RecommendationResponseDto> getMyRecommendations(
-            @RequestHeader("X-User-Id") Long userId) {
-
-        log.info("Getting recommendations for authenticated user: {}", userId);
+    public ResponseEntity<RecommendationResponseDto> getMyRecommendations() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        String email = auth.getName();
+        UserDto userDto = this.userService.getUserByEmail(email);
+        log.info("Getting recommendations for authenticated user: {}", userDto.getId());
         RecommendationResponseDto recommendations =
-                recommendationService.getRecommendationsForUser(userId);
+                recommendationService.getRecommendationsForUser(userDto.getId());
 
         return ResponseEntity.ok(recommendations);
     }
@@ -39,12 +52,10 @@ public class RecommendationController {
      * Get recommendations for a specific user (admin only)
      */
     @GetMapping("/user/{userId}")
-    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<RecommendationResponseDto> getUserRecommendations(
             @PathVariable Long userId) {
 
-        RecommendationResponseDto recommendations =
-                recommendationService.getRecommendationsForUser(userId);
+        RecommendationResponseDto recommendations = recommendationService.getRecommendationsForUser(userId);
 
         return ResponseEntity.ok(recommendations);
     }
@@ -53,14 +64,13 @@ public class RecommendationController {
      * Get recommendations based on genre preferences (for new users)
      */
     @PostMapping("/by-preferences")
-    @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<RecommendationResponseDto> getRecommendationsByPreferences(
-            @RequestHeader("X-User-Id") Long userId,
-            @RequestBody NewUserPreferencesDto preferences) {
-
-        log.info("Getting recommendations by preferences for user: {}", userId);
+    public ResponseEntity<RecommendationResponseDto> getRecommendationsByPreferences(@RequestBody NewUserPreferencesDto preferences) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        String email = auth.getName();
+        UserDto userDto = this.userService.getUserByEmail(email);
+        log.info("Getting recommendations by preferences for user: {}", userDto.getId());
         RecommendationResponseDto recommendations =
-                recommendationService.getRecommendationsForNewUser(userId, preferences);
+                recommendationService.getRecommendationsForNewUser(userDto.getId(), preferences);
 
         return ResponseEntity.ok(recommendations);
     }
