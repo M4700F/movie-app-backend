@@ -15,5 +15,5 @@ public class RecommendationResponseDto {
     private Integer userId;
 
     @JsonProperty("recommendations")
-    private List<MovieRecommendationDto> recommendations;
+    private List<MovieDto> recommendations;
 }
