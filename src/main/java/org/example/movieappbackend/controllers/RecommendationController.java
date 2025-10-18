@@ -3,10 +3,7 @@ package org.example.movieappbackend.controllers;
 import lombok.extern.slf4j.Slf4j;
 import org.example.movieappbackend.entities.User;
 import org.example.movieappbackend.exceptions.ResourceNotFoundException;
-import org.example.movieappbackend.payloads.MovieRecommendationDto;
-import org.example.movieappbackend.payloads.NewUserPreferencesDto;
-import org.example.movieappbackend.payloads.RecommendationResponseDto;
-import org.example.movieappbackend.payloads.UserDto;
+import org.example.movieappbackend.payloads.*;
 import org.example.movieappbackend.repositories.UserRepo;
 import org.example.movieappbackend.services.RecommendationService;
 import org.example.movieappbackend.services.UserService;
@@ -79,12 +76,12 @@ public class RecommendationController {
      * Get similar movies
      */
     @GetMapping("/similar/{movieId}")
-    public ResponseEntity<List<MovieRecommendationDto>> getSimilarMovies(
+    public ResponseEntity<List<MovieDto>> getSimilarMovies(
             @PathVariable Long movieId,
             @RequestParam(defaultValue = "10") int limit) {
 
         log.info("Getting similar movies for movie: {}", movieId);
-        List<MovieRecommendationDto> similarMovies =
+        List<MovieDto> similarMovies =
                 recommendationService.getSimilarMovies(movieId, limit);
 
         return ResponseEntity.ok(similarMovies);

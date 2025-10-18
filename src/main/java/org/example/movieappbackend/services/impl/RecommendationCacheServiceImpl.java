@@ -5,11 +5,13 @@ import org.example.movieappbackend.entities.Movie;
 import org.example.movieappbackend.entities.Recommendation;
 import org.example.movieappbackend.entities.User;
 import org.example.movieappbackend.exceptions.ResourceNotFoundException;
+import org.example.movieappbackend.payloads.MovieDto;
 import org.example.movieappbackend.payloads.MovieRecommendationDto;
 import org.example.movieappbackend.payloads.RecommendationResponseDto;
 import org.example.movieappbackend.repositories.MovieRepo;
 import org.example.movieappbackend.repositories.RecommendationRepo;
 import org.example.movieappbackend.services.RecommendationCacheService;
+import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -30,6 +32,9 @@ public class RecommendationCacheServiceImpl implements RecommendationCacheServic
     @Autowired
     private MovieRepo movieRepo;
 
+    @Autowired
+    private ModelMapper modelMapper;
+
     @Value("${recommendation.cache.hours:24}")
     private int cacheHours;
 
@@ -43,11 +48,11 @@ public class RecommendationCacheServiceImpl implements RecommendationCacheServic
 
         List<Recommendation> recommendations = new ArrayList<>();
 
-        for (MovieRecommendationDto mlRec : mlRecommendations.getRecommendations()) {
-            Optional<Movie> movieOpt = movieRepo.findById(mlRec.getMovieId().longValue());
+        for (MovieDto mlRec : mlRecommendations.getRecommendations()) {
+            Optional<Movie> movieOpt = movieRepo.findById(mlRec.getId());
 
             if (movieOpt.isEmpty()) {
-                log.warn("Movie {} not found in database", mlRec.getMovieId());
+                log.warn("Movie {} not found in database", mlRec.getId());
                 continue;
             }
 
@@ -57,7 +62,6 @@ public class RecommendationCacheServiceImpl implements RecommendationCacheServic
             Recommendation rec = new Recommendation();
             rec.setUser(user);
             rec.setMovie(movieOpt.get());
-            rec.setPredictedScore(mlRec.getPredictedScore());
             rec.setCachedAt(LocalDateTime.now());
 
             recommendations.add(rec);
@@ -78,13 +82,13 @@ public class RecommendationCacheServiceImpl implements RecommendationCacheServic
             return null; // Let main service handle fallback
         }
 
-        List<MovieRecommendationDto> recDTOs = cached.stream()
-                .map(rec -> new MovieRecommendationDto(
-                        rec.getMovie().getId().intValue(),
-                        rec.getPredictedScore(),
-                        rec.getMovie().getTitle(),
-                        rec.getMovie().getGenres()
-                ))
+        // ✅ FIXED: Complete the mapping from Recommendation to MovieDto
+        List<MovieDto> recDTOs = cached.stream()
+                .map(recommendation -> {
+                    Movie movie = recommendation.getMovie();
+                    // This will include posterUrl from the Movie entity
+                    return modelMapper.map(movie, MovieDto.class);
+                })
                 .collect(Collectors.toList());
 
         RecommendationResponseDto response = new RecommendationResponseDto();
