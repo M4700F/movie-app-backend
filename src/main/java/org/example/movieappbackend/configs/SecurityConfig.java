@@ -41,7 +41,7 @@ public class SecurityConfig {
 
     public static final String[] PUBLIC_URLS = {
             "/api/v1/auth/**",
-            "v3/api-docs/",
+            "v3/api-docs/**",
             "/swagger-resources/**",
             "/swagger-ui/**",
             "/webjars/**"
@@ -54,8 +54,6 @@ public class SecurityConfig {
                 .cors(Customizer.withDefaults()) // enable CORS
                 .authorizeHttpRequests(request -> request
                         .requestMatchers(PUBLIC_URLS).permitAll()
-                        .requestMatchers(HttpMethod.GET).permitAll()
-                        .requestMatchers(HttpMethod.POST).permitAll()
                         .anyRequest().authenticated())
                 .httpBasic(Customizer.withDefaults())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
