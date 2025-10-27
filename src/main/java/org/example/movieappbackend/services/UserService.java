@@ -18,4 +18,8 @@ public interface UserService {
     List<UserDto> getAllUsers();
 
     void deleteUserById(Long userId);
+
+    boolean verifyEmail(String token);
+
+    void resendVerificationEmail(String email);
 }

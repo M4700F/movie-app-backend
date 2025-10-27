@@ -30,6 +30,9 @@ public class UserDto {
     @NotEmpty
     private String about;
 
+    @NotEmpty
+    private Boolean emailVerified;
+
     // set of roledto
     Set<RoleDto> roles = new HashSet<>();
 }
