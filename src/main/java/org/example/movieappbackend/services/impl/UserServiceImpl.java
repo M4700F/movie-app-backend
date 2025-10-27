@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.annotation.JsonAppend;
 import org.example.movieappbackend.configs.AppConstants;
 import org.example.movieappbackend.entities.Role;
 import org.example.movieappbackend.entities.User;
+import org.example.movieappbackend.exceptions.DuplicateEmailException;
 import org.example.movieappbackend.exceptions.ResourceNotFoundException;
 import org.example.movieappbackend.payloads.UserDto;
 import org.example.movieappbackend.repositories.RoleRepo;
@@ -16,6 +17,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -37,6 +39,13 @@ public class UserServiceImpl implements UserService {
     @Override
     public UserDto registerUser(UserDto userDto) {
         User user = this.modelMapper.map(userDto, User.class);
+
+        // Check if user with this email already exists - throw exception if found
+        this.userRepo.findByEmail(user.getEmail())
+                .ifPresent(existingUser -> {
+                    throw new DuplicateEmailException("User", "email", user.getEmail());
+                });
+
         user.setPassword(this.passwordEncoder.encode(user.getPassword()));
         Role role = this.roleRepo.findById(AppConstants.NORMAL_USER).get();
         user.getRoles().add(role);
