@@ -172,7 +172,14 @@ public class RecommendationServiceImpl implements RecommendationService {
                             .filter(Objects::nonNull)
                             .collect(Collectors.toList());
 
-                    return new RecommendationResponseDto(userId.intValue(), enrichedMovies);
+                    RecommendationResponseDto dto = new RecommendationResponseDto(userId.intValue(), enrichedMovies);
+
+                    /*
+                     * Cache the preference-based recommendations
+                     */
+                    this.recommendationCacheService.saveRecommendationsToCache(userId, dto);
+
+                    return dto;
                 }
             }
 
