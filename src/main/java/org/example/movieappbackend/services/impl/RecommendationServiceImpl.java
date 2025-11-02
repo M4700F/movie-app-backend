@@ -16,6 +16,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Service
@@ -77,7 +78,6 @@ public class RecommendationServiceImpl implements RecommendationService {
 
             log.info("Calling FastAPI at: {}", url);
 
-            // ✅ Use Map to handle FastAPI response flexibly
             ResponseEntity<Map> response = restTemplate.postForEntity(
                     url,
                     request,
@@ -89,19 +89,42 @@ public class RecommendationServiceImpl implements RecommendationService {
                         (List<Map<String, Object>>) response.getBody().get("recommendations");
 
                 if (recommendations != null && !recommendations.isEmpty()) {
-                    // Extract movie IDs and enrich with database data
-                    List<MovieDto> enrichedMovies = recommendations.stream()
-                            .map(rec -> {
-                                Integer movieId = (Integer) rec.get("movie_id");
-                                if (movieId == null) {
-                                    movieId = (Integer) rec.get("movieId");
-                                }
-                                return movieId != null ? movieId.longValue() : null;
+                    // ✅ OPTIMIZED: Extract movie IDs and scores first
+                    Map<Long, Double> movieIdToScore = new HashMap<>();
+                    List<Long> movieIds = new ArrayList<>();
+
+                    for (Map<String, Object> rec : recommendations) {
+                        Integer movieId = (Integer) rec.get("movie_id");
+                        if (movieId == null) {
+                            movieId = (Integer) rec.get("movieId");
+                        }
+
+                        if (movieId != null) {
+                            Long mid = movieId.longValue();
+                            movieIds.add(mid);
+
+                            // Extract predicted_score
+                            Object scoreObj = rec.get("predicted_score");
+                            if (scoreObj instanceof Number) {
+                                movieIdToScore.put(mid, ((Number) scoreObj).doubleValue());
+                            }
+                        }
+                    }
+
+                    // ✅ Fetch ALL movies in ONE query
+                    Map<Long, Movie> movieMap = movieRepo.findAllById(movieIds).stream()
+                            .collect(Collectors.toMap(Movie::getId, Function.identity()));
+
+                    // ✅ Build DTOs using the pre-fetched movies
+                    List<MovieDto> enrichedMovies = movieIds.stream()
+                            .map(movieId -> {
+                                Movie movie = movieMap.get(movieId);
+                                if (movie == null) return null;
+
+                                MovieDto dto = modelMapper.map(movie, MovieDto.class);
+                                dto.setPredictedScore(movieIdToScore.get(movieId));
+                                return dto;
                             })
-                            .filter(Objects::nonNull)
-                            .map(movieId -> movieRepo.findById(movieId)
-                                    .map(movie -> modelMapper.map(movie, MovieDto.class))
-                                    .orElse(null))
                             .filter(Objects::nonNull)
                             .collect(Collectors.toList());
 
@@ -118,7 +141,7 @@ public class RecommendationServiceImpl implements RecommendationService {
 
         } catch (Exception e) {
             log.error("Error calling FastAPI for user {}: {}", userId, e.getMessage());
-            e.printStackTrace(); // Add this temporarily for debugging
+            e.printStackTrace();
             // Fallback to cached recommendations
             RecommendationResponseDto cached = this.recommendationCacheService.getCachedRecommendations(userId);
             if (cached != null) {
@@ -144,7 +167,6 @@ public class RecommendationServiceImpl implements RecommendationService {
 
             String url = fastApiBaseUrl + "/recommend";
 
-            // ✅ Use Map to handle FastAPI response flexibly
             ResponseEntity<Map> response = restTemplate.postForEntity(
                     url,
                     request,
@@ -156,19 +178,42 @@ public class RecommendationServiceImpl implements RecommendationService {
                         (List<Map<String, Object>>) response.getBody().get("recommendations");
 
                 if (recommendations != null && !recommendations.isEmpty()) {
-                    // Extract movie IDs and enrich with database data
-                    List<MovieDto> enrichedMovies = recommendations.stream()
-                            .map(rec -> {
-                                Integer movieId = (Integer) rec.get("movie_id");
-                                if (movieId == null) {
-                                    movieId = (Integer) rec.get("movieId");
-                                }
-                                return movieId != null ? movieId.longValue() : null;
+                    // ✅ OPTIMIZED: Extract movie IDs and scores first
+                    Map<Long, Double> movieIdToScore = new HashMap<>();
+                    List<Long> movieIds = new ArrayList<>();
+
+                    for (Map<String, Object> rec : recommendations) {
+                        Integer movieId = (Integer) rec.get("movie_id");
+                        if (movieId == null) {
+                            movieId = (Integer) rec.get("movieId");
+                        }
+
+                        if (movieId != null) {
+                            Long mid = movieId.longValue();
+                            movieIds.add(mid);
+
+                            // Extract predicted_score
+                            Object scoreObj = rec.get("predicted_score");
+                            if (scoreObj instanceof Number) {
+                                movieIdToScore.put(mid, ((Number) scoreObj).doubleValue());
+                            }
+                        }
+                    }
+
+                    // ✅ Fetch ALL movies in ONE query
+                    Map<Long, Movie> movieMap = movieRepo.findAllById(movieIds).stream()
+                            .collect(Collectors.toMap(Movie::getId, Function.identity()));
+
+                    // ✅ Build DTOs using the pre-fetched movies
+                    List<MovieDto> enrichedMovies = movieIds.stream()
+                            .map(movieId -> {
+                                Movie movie = movieMap.get(movieId);
+                                if (movie == null) return null;
+
+                                MovieDto dto = modelMapper.map(movie, MovieDto.class);
+                                dto.setPredictedScore(movieIdToScore.get(movieId));
+                                return dto;
                             })
-                            .filter(Objects::nonNull)
-                            .map(movieId -> movieRepo.findById(movieId)
-                                    .map(movie -> modelMapper.map(movie, MovieDto.class))
-                                    .orElse(null))
                             .filter(Objects::nonNull)
                             .collect(Collectors.toList());
 
@@ -185,7 +230,7 @@ public class RecommendationServiceImpl implements RecommendationService {
 
         } catch (Exception e) {
             log.error("Error getting recommendations for new user: {}", e.getMessage());
-            e.printStackTrace(); // Add this temporarily for debugging
+            e.printStackTrace();
         }
 
         return getPopularMoviesAsRecommendations(userId);
@@ -199,7 +244,6 @@ public class RecommendationServiceImpl implements RecommendationService {
 
         List<Movie> popularMovies = movieRepo.findTop10Movies();
 
-        // Already have full Movie entities, so posterUrl is included
         List<MovieDto> movieDtos = popularMovies.stream()
                 .map(movie -> modelMapper.map(movie, MovieDto.class))
                 .collect(Collectors.toList());
@@ -220,8 +264,8 @@ public class RecommendationServiceImpl implements RecommendationService {
                         (List<Map<String, Object>>) response.getBody().get("similar_movies");
 
                 if (similarMovies != null && !similarMovies.isEmpty()) {
-                    // Extract movie IDs and enrich with database data
-                    return similarMovies.stream()
+                    // ✅ OPTIMIZED: Extract all movie IDs first
+                    List<Long> movieIds = similarMovies.stream()
                             .map(movie -> {
                                 Integer mid = (Integer) movie.get("movie_id");
                                 if (mid == null) {
@@ -230,9 +274,18 @@ public class RecommendationServiceImpl implements RecommendationService {
                                 return mid != null ? mid.longValue() : null;
                             })
                             .filter(Objects::nonNull)
-                            .map(mid -> movieRepo.findById(mid)
-                                    .map(m -> modelMapper.map(m, MovieDto.class))
-                                    .orElse(null))
+                            .collect(Collectors.toList());
+
+                    // ✅ Fetch ALL movies in ONE query
+                    Map<Long, Movie> movieMap = movieRepo.findAllById(movieIds).stream()
+                            .collect(Collectors.toMap(Movie::getId, Function.identity()));
+
+                    // ✅ Build DTOs maintaining order
+                    return movieIds.stream()
+                            .map(mid -> {
+                                Movie m = movieMap.get(mid);
+                                return m != null ? modelMapper.map(m, MovieDto.class) : null;
+                            })
                             .filter(Objects::nonNull)
                             .collect(Collectors.toList());
                 }
@@ -240,7 +293,7 @@ public class RecommendationServiceImpl implements RecommendationService {
 
         } catch (Exception e) {
             log.error("Error getting similar movies: {}", e.getMessage());
-            e.printStackTrace(); // Add this temporarily for debugging
+            e.printStackTrace();
         }
 
         return Collections.emptyList();

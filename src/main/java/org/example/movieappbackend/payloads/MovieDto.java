@@ -19,4 +19,5 @@ public class MovieDto {
     @NotBlank
     private String genres;
     private String posterUrl; // Added posterUrl field
+    private Double predictedScore;
 }
