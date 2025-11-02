@@ -6,6 +6,7 @@ import org.example.movieappbackend.exceptions.ResourceNotFoundException;
 import org.example.movieappbackend.payloads.*;
 import org.example.movieappbackend.repositories.UserRepo;
 import org.example.movieappbackend.services.RecommendationService;
+import org.example.movieappbackend.services.UserPreferenceService;
 import org.example.movieappbackend.services.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -28,7 +29,7 @@ public class RecommendationController {
     private UserService userService;
 
     @Autowired
-    private UserRepo userRepo;
+    private UserPreferenceService userPreferenceService;
 
     /**
      * Get personalized recommendations for an authenticated user
@@ -44,6 +45,17 @@ public class RecommendationController {
 
         return ResponseEntity.ok(recommendations);
     }
+
+    @GetMapping("/preferences/me")
+    public ResponseEntity<NewUserPreferencesDto> getMyPreferences() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        String email = auth.getName();
+        UserDto userDto = this.userService.getUserByEmail(email);
+
+        NewUserPreferencesDto preferences = this.userPreferenceService.getUserPreferences(userDto.getId());
+        return ResponseEntity.ok(preferences);
+    }
+
 
     /**
      * Get recommendations for a specific user (admin only)
@@ -66,6 +78,9 @@ public class RecommendationController {
         String email = auth.getName();
         UserDto userDto = this.userService.getUserByEmail(email);
         log.info("Getting recommendations by preferences for user: {}", userDto.getId());
+
+        this.userPreferenceService.saveUserPreference(userDto.getId(), preferences);
+
         RecommendationResponseDto recommendations =
                 recommendationService.getRecommendationsForNewUser(userDto.getId(), preferences);
 
