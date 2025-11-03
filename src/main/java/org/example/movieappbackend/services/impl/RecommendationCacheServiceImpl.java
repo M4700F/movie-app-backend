@@ -14,12 +14,14 @@ import org.example.movieappbackend.services.RecommendationCacheService;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.core.parameters.P;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Service
@@ -46,23 +48,39 @@ public class RecommendationCacheServiceImpl implements RecommendationCacheServic
         // Clear old cached recommendations
         recommendationRepo.deleteAllByUserId(userId);
 
+        List<Long> movieIds = mlRecommendations.getRecommendations().stream().map(MovieDto::getId).collect(Collectors.toList());
+
+        Map<Long, Movie> movieMap = this.movieRepo.findAllById(movieIds).stream().collect(Collectors.toMap(Movie::getId, Function.identity()));
+
+        User userRef = new User();
+        userRef.setId(userId);
+
         List<Recommendation> recommendations = new ArrayList<>();
+        LocalDateTime now = LocalDateTime.now();
 
         for (MovieDto mlRec : mlRecommendations.getRecommendations()) {
-            Optional<Movie> movieOpt = movieRepo.findById(mlRec.getId());
+            // Optional<Movie> movieOpt = movieRepo.findById(mlRec.getId());
 
-            if (movieOpt.isEmpty()) {
+            Movie movie = movieMap.get(mlRec.getId());
+
+//            if (movieOpt.isEmpty()) {
+//                log.warn("Movie {} not found in database", mlRec.getId());
+//                continue;
+//            }
+
+            if(movie == null) {
                 log.warn("Movie {} not found in database", mlRec.getId());
                 continue;
             }
 
-            User user = new User();
-            user.setId(userId);
+//            User user = new User();
+//            user.setId(userId);
 
             Recommendation rec = new Recommendation();
-            rec.setUser(user);
-            rec.setMovie(movieOpt.get());
-            rec.setCachedAt(LocalDateTime.now());
+            rec.setUser(userRef);
+            rec.setMovie(movie);
+            rec.setCachedAt(now);
+            rec.setPredictedScore(mlRec.getPredictedScore());
 
             recommendations.add(rec);
         }
@@ -87,7 +105,9 @@ public class RecommendationCacheServiceImpl implements RecommendationCacheServic
                 .map(recommendation -> {
                     Movie movie = recommendation.getMovie();
                     // This will include posterUrl from the Movie entity
-                    return modelMapper.map(movie, MovieDto.class);
+                    MovieDto dto = modelMapper.map(movie, MovieDto.class);
+                    dto.setPredictedScore(recommendation.getPredictedScore());
+                    return dto;
                 })
                 .collect(Collectors.toList());
 

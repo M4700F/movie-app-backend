@@ -3,6 +3,7 @@ package org.example.movieappbackend.controllers;
 import org.example.movieappbackend.Security.CustomUserDetailService;
 import org.example.movieappbackend.Security.JwtTokenHelper;
 import org.example.movieappbackend.exceptions.ApiException;
+import org.example.movieappbackend.exceptions.EmailNotVerifiedException;
 import org.example.movieappbackend.payloads.JwtAuthRequest;
 import org.example.movieappbackend.payloads.JwtAuthResponse;
 import org.example.movieappbackend.payloads.UserDto;
@@ -38,6 +39,30 @@ public class AuthController {
         return new ResponseEntity<>(registeredUser, HttpStatus.CREATED);
     }
 
+    @GetMapping("/verify")
+    public ResponseEntity<String> verifyEmail(@RequestParam("token") String token) {
+        boolean isVerified = userService.verifyEmail(token);
+
+        if (isVerified) {
+            return ResponseEntity.ok("Email verified successfully! You can now log in.");
+        } else {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body("Invalid or expired verification token.");
+        }
+    }
+
+    @PostMapping("/resend-verification")
+    public ResponseEntity<String> resendVerification(@RequestParam("email") String email){
+        try {
+            this.userService.resendVerificationEmail(email);
+            return ResponseEntity.ok("Verification email sent successfully.");
+        } catch (Exception e){
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body("Error" + e.getMessage());
+        }
+    }
+
+
     @PostMapping("/login")
     public ResponseEntity<JwtAuthResponse> createToken(@RequestBody JwtAuthRequest request) throws Exception {
         this.authenticate(request.getUsername(), request.getPassword());
@@ -45,8 +70,16 @@ public class AuthController {
         // Only reach here if authentication succeeds
         System.out.println("Authentication successful for user: " + request.getUsername());
 
+        // Check if an email is verified BEFORE generating a token
+        UserDto user = userService.getUserByEmail(request.getUsername());
+        if (user.getEmailVerified() == null || !user.getEmailVerified()) {
+            throw new EmailNotVerifiedException("Email", "user", request.getUsername());
+        }
+
+
         // Load user details
         UserDetails userDetails = this.customUserDetailService.loadUserByUsername(request.getUsername());
+
 
         String token = this.jwtTokenHelper.generateToken(userDetails.getUsername());
 
@@ -79,7 +112,7 @@ public class AuthController {
         }
 
         String username = jwtTokenHelper.getUsernameFromToken(token);
-        UserDto user = userService.getUserByEmail(username); // your service already has this
+        UserDto user = userService.getUserByEmail(username);
         return ResponseEntity.ok(user);
     }
 

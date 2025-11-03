@@ -8,6 +8,7 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -23,11 +24,21 @@ public class User implements UserDetails {
 
     private String name;
 
+    @Column(unique = true)
     private String email;
 
     private String password;
 
     private String about;
+
+    @Column(name = "email_verified")
+    private Boolean emailVerified = false;
+
+    @Column(name = "verification_token")
+    private String verificationToken;
+
+    @Column(name = "verification_token_expiry")
+    private LocalDateTime verificationTokenExpiry;
 
     @ManyToMany(fetch = FetchType.EAGER, cascade = {CascadeType.MERGE, CascadeType.PERSIST})
     @JoinTable(name = "user_role", joinColumns = @JoinColumn(name = "user_id", referencedColumnName = "id"), inverseJoinColumns = @JoinColumn(name = "role_id", referencedColumnName = "id"))

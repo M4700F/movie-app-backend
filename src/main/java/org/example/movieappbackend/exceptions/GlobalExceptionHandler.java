@@ -15,10 +15,25 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<ApiResponse>(apiResponse, HttpStatus.NOT_FOUND);
     }
 
+    @ExceptionHandler(DuplicateEmailException.class)
+    public ResponseEntity<ApiResponse> duplicateEmailExceptionHandler(DuplicateEmailException ex){
+        String message = ex.getMessage();
+        ApiResponse apiResponse = new ApiResponse(message, false);
+        return new ResponseEntity<ApiResponse>(apiResponse, HttpStatus.CONFLICT);
+    }
+
     @ExceptionHandler(ApiException.class)
     public ResponseEntity<ApiResponse> ApiExceptionHandler(ApiException ex) {
         String message = ex.getMessage();
         ApiResponse apiResponse = new ApiResponse(message, false);
         return new ResponseEntity<ApiResponse>(apiResponse, HttpStatus.BAD_REQUEST);
     }
+
+    @ExceptionHandler(EmailNotVerifiedException.class)
+    public ResponseEntity<ApiResponse> emailNotVerifiedExceptionHandler(EmailNotVerifiedException ex) {
+        String message = ex.getMessage();
+        ApiResponse apiResponse = new ApiResponse(message, false);
+        return new ResponseEntity<ApiResponse>(apiResponse, HttpStatus.FORBIDDEN);
+    }
+
 }

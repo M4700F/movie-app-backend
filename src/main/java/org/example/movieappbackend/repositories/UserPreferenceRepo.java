@@ -1,14 +1,13 @@
 package org.example.movieappbackend.repositories;
 
 import org.example.movieappbackend.entities.User;
+import org.example.movieappbackend.entities.UserPreference;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
-import java.util.List;
 import java.util.Optional;
 
 @Repository
-public interface UserRepo extends JpaRepository<User, Long> {
-    Optional<User> findByEmail(String email);
-    Optional<User> findByVerificationToken(String token);
+public interface UserPreferenceRepo extends JpaRepository<UserPreference, Integer> {
+    Optional<UserPreference> findByUserId(Long user_id);
 }
